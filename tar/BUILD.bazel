@@ -1,0 +1,27 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "tar",
+    srcs = ["tar.go"],
+    importpath = "github.com/google/safearchive/tar",
+    visibility = ["//visibility:public"],
+    deps = ["//sanitizer"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":tar",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "tar_test",
+    size = "small",
+    srcs = ["tar_test.go"],
+    embed = [":tar"],
+    embedsrcs = glob(["*.tar"]),
+    deps = [
+    ],
+)

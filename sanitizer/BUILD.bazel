@@ -1,0 +1,31 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "sanitizer",
+    srcs = [
+        "sanitizer.go",
+        "sanitizer_nix.go",
+        "sanitizer_win.go",
+    ],
+    importpath = "github.com/google/safearchive/sanitizer",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":sanitizer",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "sanitizer_test",
+    size = "small",
+    srcs = [
+        "sanitizer_nix_test.go",
+        "sanitizer_win_test.go",
+    ],
+    embed = [":sanitizer"],
+)
+

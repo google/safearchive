@@ -1,0 +1,27 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "zip",
+    srcs = ["zip.go"],
+    importpath = "github.com/google/safearchive/zip",
+    visibility = ["//visibility:public"],
+    deps = ["//sanitizer"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":zip",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "zip_test",
+    size = "small",
+    srcs = ["zip_test.go"],
+    embed = [":zip"],
+    embedsrcs = glob(["*.zip"]),
+    deps = [
+    ],
+)
