@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC.
+// Copyright 2024 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -159,7 +159,8 @@ func applyMagic(files []*zip.File, securityMode SecurityMode) []*zip.File {
 		}
 
 		if securityMode&PreventSymlinkTraversal != 0 {
-			fName := strings.TrimSuffix(f.Name, "/")
+			fName := sanitizer.SanitizePath(f.Name)
+			fName = strings.TrimSuffix(fName, "/")
 			n := strings.Split(fName, "/")
 			traversal := false
 			for i := 1; i <= len(n); i++ {

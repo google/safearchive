@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC.
+// Copyright 2024 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -292,7 +292,8 @@ func (tr *Reader) Next() (*tar.Header, error) {
 		}
 
 		if tr.securityMode&PreventSymlinkTraversal != 0 {
-			hName := strings.TrimSuffix(h.Name, "/")
+			hName := sanitizer.SanitizePath(h.Name)
+			hName = strings.TrimSuffix(hName, "/")
 			n := strings.Split(hName, "/")
 			traversal := false
 			for i := 1; i <= len(n); i++ {
