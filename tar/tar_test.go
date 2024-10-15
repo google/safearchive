@@ -93,6 +93,23 @@ var (
 	*/
 	//go:embed case-insensitive.tar
 	eTraverseViaCaseInsensitiveLinksTar []byte
+
+	/*
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 3D Objects
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 Androi~2
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 ANDROI~2
+		drwxr-x--- imrer/primarygroup 0 2024-10-11 14:27 foo/
+		drwxr-x--- imrer/primarygroup 0 2024-10-11 14:27 foo/ANDROI~2/
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 foo/ANDROI~2/bar
+		drwxr-x--- imrer/primarygroup 0 2024-10-11 14:27 foo/FOOOOO~1.JPG/
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 foo/FOOOOO~1.JPG/bar
+		drwxr-x--- imrer/primarygroup 0 2024-10-11 14:27 foo/Androi~2/
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 foo/Androi~2/bar
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 FOOOOO~1.JPG
+		-rw-r----- imrer/primarygroup 5 2024-10-11 14:27 Some~Stuff
+	*/
+	//go:embed winshort.tar
+	eWinShortTar []byte
 )
 
 func isSlashRune(r rune) bool { return r == '/' || r == '\\' }
@@ -486,6 +503,31 @@ func TestSafetarLinksCaseInsensitive(t *testing.T) {
 	}
 
 	hdr, err = tr.Next()
+	if hdr != nil {
+		t.Errorf("No more tar entries were expected. Next() = %+v, want nil", hdr)
+	}
+	if err != io.EOF {
+		t.Fatal(err)
+	}
+}
+
+func TestWindowsShortFilenames(t *testing.T) {
+	buf := bytes.NewBuffer(eWinShortTar[:])
+	t.Logf("size of archive: %d", len(buf.Bytes()))
+	tr := NewReader(buf)
+	tr.SetSecurityMode(tr.GetSecurityMode() | SkipWindowsShortFilenames)
+
+	for i, want := range []string{"3D Objects", "foo/", "Some~Stuff"} {
+		hdr, err := tr.Next()
+		if err != nil {
+			t.Errorf("No errors were expected at entry %d. Next() = %+v, want nil", i, err)
+		}
+		if hdr.Name != want {
+			t.Errorf("Unexpected entry %d. Next().Name = %v, want %v", i, hdr.Name, want)
+		}
+	}
+
+	hdr, err := tr.Next()
 	if hdr != nil {
 		t.Errorf("No more tar entries were expected. Next() = %+v, want nil", hdr)
 	}

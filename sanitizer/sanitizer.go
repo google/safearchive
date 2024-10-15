@@ -18,11 +18,17 @@ package sanitizer
 
 import (
 	"os"
+	"regexp"
+	"strings"
 )
 
 const (
 	winPathSeparator = `\`
 	nixPathSeparator = `/`
+)
+
+var (
+	winShortFilenameRegex = regexp.MustCompile(`~\d+\.?`)
 )
 
 // SanitizePath sanitizes the supplied path by purely lexical processing.
@@ -42,4 +48,21 @@ func SanitizePath(in string) string {
 	}
 
 	return sanitized
+}
+
+// HasWindowsShortFilenames reports if any path component look like a Windows short filename.
+// Short filenames on Windows may look like this:
+// 1(3)~1.PNG     1 (3) (1).png
+// DOWNLO~1       Downloads
+// FOOOOO~1.JPG   fooooooooo.png.gif.jpg
+func HasWindowsShortFilenames(in string) bool {
+	in = strings.ReplaceAll(in, "\\", "/")
+	parts := strings.Split(in, "/")
+	for _, part := range parts {
+		matched := winShortFilenameRegex.MatchString(part)
+		if matched {
+			return true
+		}
+	}
+	return false
 }

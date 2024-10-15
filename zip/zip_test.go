@@ -92,6 +92,28 @@ var (
 	*/
 	//go:embed case-insensitive.zip
 	eCaseInsensitiveSymlinksZip []byte
+
+	/*
+		Archive:  winshort.zip
+		  Length      Date    Time    Name
+		---------  ---------- -----   ----
+		        5  2024-10-11 14:27   3D Objects
+		        5  2024-10-11 14:27   Androi~2
+		        5  2024-10-11 14:27   ANDROI~2
+		        0  2024-10-11 14:27   foo/
+		        5  2024-10-11 14:27   FOOOOO~1.JPG
+		        5  2024-10-11 14:27   Some~Stuff
+		        0  2024-10-11 14:27   foo/ANDROI~2/
+		        5  2024-10-11 14:27   foo/ANDROI~2/bar
+		        0  2024-10-11 14:27   foo/FOOOOO~1.JPG/
+		        5  2024-10-11 14:27   foo/FOOOOO~1.JPG/bar
+		        0  2024-10-11 14:27   foo/Androi~2/
+		        5  2024-10-11 14:27   foo/Androi~2/bar
+		---------                     -------
+		       40                     12 files
+	*/
+	//go:embed winshort.zip
+	eWinShortFilenamesZip []byte
 )
 
 func TestSafezip(t *testing.T) {
@@ -341,5 +363,24 @@ func TestTypes(t *testing.T) {
 
 	if "*"+openReaderType != newReaderType {
 		t.Errorf("type of zip.OpenReader().Reader: %v, type of zip.NewReader(): %v", openReaderType, newReaderType)
+	}
+}
+
+func TestWindowsShortFilenames(t *testing.T) {
+	path := archiveToPath(t, eWinShortFilenamesZip)
+	r, err := OpenReader(path)
+	if err != nil {
+		t.Fatalf("Error opening zip. OpenReader(%v) = %v, want nil", path, err)
+	}
+	r.SetSecurityMode(r.GetSecurityMode() | SkipWindowsShortFilenames)
+
+	if len(r.File) != 3 {
+		t.Fatalf("Unexpected number of files in the archive. len(OpenReader(%v).File) = %d, want 2.", path, len(r.File))
+	}
+
+	for i, want := range []string{"3D Objects", "foo/", "Some~Stuff"} {
+		if r.File[i].Name != want {
+			t.Errorf("Unexpected entry. OpenReader(%v).File[%d].Name = %v, want %v", path, i, r.File[i].Name, want)
+		}
 	}
 }

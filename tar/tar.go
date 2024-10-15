@@ -186,11 +186,16 @@ const (
 	// By default, this is activated only on MacOS and Windows builds. If you are extracting to a
 	// case insensitive filesystem on a Unix platform, you should activate this feature explicitly.
 	PreventCaseInsensitiveSymlinkTraversal SecurityMode = 64
+	// SkipWindowsShortFilenames drops archive entries that have a path component that look like a
+	// Windows short filename (e.g. GIT~1).
+	// By default, this is activated only on Windows builds. If you are extracting to a Windows
+	// filesystem on a non-Windows platform, you should activate this feature explicitly.
+	SkipWindowsShortFilenames SecurityMode = 128
 )
 
 // MaximumSecurityMode enables all features for maximum security.
 // Recommended for integrations that need file contents only (and nothing unix specific).
-const MaximumSecurityMode = SkipSpecialFiles | SanitizeFileMode | SanitizeFilenames | PreventSymlinkTraversal | DropXattrs | PreventCaseInsensitiveSymlinkTraversal
+const MaximumSecurityMode = SkipSpecialFiles | SanitizeFileMode | SanitizeFilenames | PreventSymlinkTraversal | DropXattrs | PreventCaseInsensitiveSymlinkTraversal | SkipWindowsShortFilenames
 
 var (
 	// ErrHeader invalid tar header
@@ -295,6 +300,10 @@ func (tr *Reader) Next() (*tar.Header, error) {
 		if tr.securityMode&SanitizeFilenames != 0 {
 			// Sanitize h.Name
 			h.Name = sanitizer.SanitizePath(h.Name)
+		}
+
+		if tr.securityMode&SkipWindowsShortFilenames != 0 && sanitizer.HasWindowsShortFilenames(h.Name) {
+			continue
 		}
 
 		if tr.securityMode&PreventSymlinkTraversal != 0 {

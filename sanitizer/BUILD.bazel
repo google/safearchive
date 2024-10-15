@@ -26,6 +26,7 @@ go_test(
     size = "small",
     srcs = [
         "sanitizer_nix_test.go",
+        "sanitizer_test.go",
         "sanitizer_win_test.go",
     ],
     embed = [":sanitizer"],

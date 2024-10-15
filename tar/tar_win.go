@@ -18,4 +18,4 @@
 package tar
 
 // DefaultSecurityMode is a set of security features that are enabled by default.
-const DefaultSecurityMode = SanitizeFilenames | PreventSymlinkTraversal | PreventCaseInsensitiveSymlinkTraversal
+const DefaultSecurityMode = SanitizeFilenames | PreventSymlinkTraversal | PreventCaseInsensitiveSymlinkTraversal | SkipWindowsShortFilenames

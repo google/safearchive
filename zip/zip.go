@@ -130,11 +130,16 @@ const (
 	// By default, this is activated only on MacOS and Windows builds. If you are extracting to a
 	// case insensitive filesystem on a Unix platform, you should activate this feature explicitly.
 	PreventCaseInsensitiveSymlinkTraversal SecurityMode = 16
+	// SkipWindowsShortFilenames drops archive entries that have a path component that look like a
+	// Windows short filename (e.g. GIT~1).
+	// By default, this is activated only on Windows builds. If you are extracting to a Windows
+	// filesystem on a non-Windows platform, you should activate this feature explicitly.
+	SkipWindowsShortFilenames SecurityMode = 32
 )
 
 // MaximumSecurityMode enables all security features. Apps that care about file contents only
 // and nothing unix specific (e.g. file modes or special devices) should use this mode.
-const MaximumSecurityMode = SanitizeFilenames | PreventSymlinkTraversal | SanitizeFileMode | SkipSpecialFiles | PreventCaseInsensitiveSymlinkTraversal
+const MaximumSecurityMode = SanitizeFilenames | PreventSymlinkTraversal | SanitizeFileMode | SkipSpecialFiles | PreventCaseInsensitiveSymlinkTraversal | SkipWindowsShortFilenames
 
 func isSpecialFile(f zip.File) bool {
 	amode := f.Mode()
@@ -161,6 +166,10 @@ func applyMagic(files []*zip.File, securityMode SecurityMode) []*zip.File {
 		if securityMode&SanitizeFilenames != 0 {
 			// Sanitize filename
 			f.Name = sanitizer.SanitizePath(f.Name)
+		}
+
+		if securityMode&SkipWindowsShortFilenames != 0 && sanitizer.HasWindowsShortFilenames(f.Name) {
+			continue
 		}
 
 		if securityMode&PreventSymlinkTraversal != 0 {

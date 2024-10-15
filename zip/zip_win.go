@@ -19,4 +19,4 @@ package zip
 
 // DefaultSecurityMode enables path traversal security measures. This mode should be safe for all
 // existing integrations.
-const DefaultSecurityMode = SanitizeFilenames | PreventSymlinkTraversal | PreventCaseInsensitiveSymlinkTraversal
+const DefaultSecurityMode = SanitizeFilenames | PreventSymlinkTraversal | PreventCaseInsensitiveSymlinkTraversal | SkipWindowsShortFilenames
