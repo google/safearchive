@@ -79,6 +79,19 @@ var (
 	*/
 	//go:embed symlinks3.zip
 	eSymlinks3Zip []byte
+
+	/*
+		// This archive attempts to traverse the path via case insensitive symlinks.
+			Archive:  case-insensitive.zip
+				Length      Date    Time    Name
+			---------  ---------- -----   ----
+							1  2024-10-10 11:31   tmp
+							6  2024-10-10 11:31   Tmp/some-file
+			---------                     -------
+							7                     2 files
+	*/
+	//go:embed case-insensitive.zip
+	eCaseInsensitiveSymlinksZip []byte
 )
 
 func TestSafezip(t *testing.T) {
@@ -290,6 +303,22 @@ func TestSymlinks3(t *testing.T) {
 	}
 	if r.File[0].Name != "root/" {
 		t.Errorf("unexpected entry: %q", r.File[0].Name)
+	}
+}
+
+func TestSymlinksCaseInsensitive(t *testing.T) {
+	path := archiveToPath(t, eCaseInsensitiveSymlinksZip)
+	r, err := OpenReader(path)
+	if err != nil {
+		t.Fatalf("Error opening zip. OpenReader(%v) = %v, want nil", path, err)
+	}
+	r.SetSecurityMode(r.GetSecurityMode() | PreventCaseInsensitiveSymlinkTraversal)
+
+	if len(r.File) != 1 {
+		t.Fatalf("Unexpected number of files in the archive. len(OpenReader(%v).File) = %d, want 1.", path, len(r.File))
+	}
+	if r.File[0].Name != "tmp" {
+		t.Errorf("Unexpected entry. OpenReader(%v).File[0].Name = %v, want %v", path, r.File[0].Name, "tmp")
 	}
 }
 

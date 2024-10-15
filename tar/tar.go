@@ -168,23 +168,29 @@ const (
 	// SkipSpecialFiles security mode skips special files (e.g. block devices or fifos)
 	SkipSpecialFiles SecurityMode = 1
 	// SanitizeFileMode will drop special file modes (e.g. setuid and tmp bit)
+	// This feature is not enabled by default.
 	SanitizeFileMode SecurityMode = 2
 	// SanitizeFilenames will sanitize filenames (dropping .. path components and turning entries into relative)
 	// The very first version (early 2022) of this library featured this security measure only.
+	// This feature is enabled by default.
 	SanitizeFilenames SecurityMode = 4
 	// DropXattrs will drop extended attributes from the header
+	// This feature is not enabled by default.
 	DropXattrs SecurityMode = 16
 	// PreventSymlinkTraversal drops malicious entries that attempt to write to an outside location
 	// through a symbolic link.
+	// This feature is enabled by default.
 	PreventSymlinkTraversal SecurityMode = 32
+	// PreventCaseInsensitiveSymlinkTraversal activates case insensitive symlink traversal detection.
+	// This feature requires PreventSymlinkTraversal to be enabled as well.
+	// By default, this is activated only on MacOS and Windows builds. If you are extracting to a
+	// case insensitive filesystem on a Unix platform, you should activate this feature explicitly.
+	PreventCaseInsensitiveSymlinkTraversal SecurityMode = 64
 )
-
-// DefaultSecurityMode is a set of security features that are enabled by default.
-const DefaultSecurityMode = SanitizeFilenames | PreventSymlinkTraversal
 
 // MaximumSecurityMode enables all features for maximum security.
 // Recommended for integrations that need file contents only (and nothing unix specific).
-const MaximumSecurityMode = SkipSpecialFiles | SanitizeFileMode | SanitizeFilenames | PreventSymlinkTraversal | DropXattrs
+const MaximumSecurityMode = SkipSpecialFiles | SanitizeFileMode | SanitizeFilenames | PreventSymlinkTraversal | DropXattrs | PreventCaseInsensitiveSymlinkTraversal
 
 var (
 	// ErrHeader invalid tar header
@@ -294,6 +300,10 @@ func (tr *Reader) Next() (*tar.Header, error) {
 		if tr.securityMode&PreventSymlinkTraversal != 0 {
 			hName := sanitizer.SanitizePath(h.Name)
 			hName = strings.TrimSuffix(hName, "/")
+			if tr.securityMode&PreventCaseInsensitiveSymlinkTraversal != 0 {
+				hName = strings.ToLower(hName)
+			}
+
 			n := strings.Split(hName, "/")
 			traversal := false
 			for i := 1; i <= len(n); i++ {

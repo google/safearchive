@@ -6,7 +6,12 @@ package(default_visibility = ["//visibility:public"])
 
 go_library(
     name = "tar",
-    srcs = ["tar.go"],
+    srcs = [
+        "tar.go",
+        "tar_darwin.go",
+        "tar_unix.go",
+        "tar_win.go",
+    ],
     importpath = "github.com/google/safearchive/tar",
     visibility = ["//visibility:public"],
     deps = ["//sanitizer"],
@@ -25,5 +30,7 @@ go_test(
     embed = [":tar"],
     embedsrcs = glob(["*.tar"]),
     deps = [
+        "@go_cmp//cmp",
+        "@go_cmp//cmp/cmpopts",
     ],
 )

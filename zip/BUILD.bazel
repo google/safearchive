@@ -6,7 +6,12 @@ package(default_visibility = ["//visibility:public"])
 
 go_library(
     name = "zip",
-    srcs = ["zip.go"],
+    srcs = [
+        "zip.go",
+        "zip_darwin.go",
+        "zip_unix.go",
+        "zip_win.go",
+    ],
     importpath = "github.com/google/safearchive/zip",
     visibility = ["//visibility:public"],
     deps = ["//sanitizer"],

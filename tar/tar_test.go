@@ -15,12 +15,16 @@
 package tar
 
 import (
+	"archive/tar"
 	"bytes"
 	_ "embed"
 	"io"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 var (
@@ -82,6 +86,13 @@ var (
 	*/
 	//go:embed xattr.tar
 	eXattrTar []byte
+
+	/*
+	   lrwxrwxrwx root/root         0 2024-10-10 11:17 tmp -> /
+	   -rw-r--r-- root/root         5 2024-10-10 11:17 Tmp/test-file
+	*/
+	//go:embed case-insensitive.tar
+	eTraverseViaCaseInsensitiveLinksTar []byte
 )
 
 func isSlashRune(r rune) bool { return r == '/' || r == '\\' }
@@ -453,5 +464,32 @@ func TestXattrs(t *testing.T) {
 
 	if members != 1 {
 		t.Errorf("the Reader didn't yield any members")
+	}
+}
+
+func TestSafetarLinksCaseInsensitive(t *testing.T) {
+	buf := bytes.NewBuffer(eTraverseViaCaseInsensitiveLinksTar[:])
+
+	// default settings with PreventSymlinkTraversal
+	tr := NewReader(buf)
+	tr.SetSecurityMode(tr.GetSecurityMode() | PreventCaseInsensitiveSymlinkTraversal)
+	hdr, err := tr.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// first entry is supposed to be tmp -> /
+	want := &tar.Header{Name: "tmp", Typeflag: TypeSymlink, Linkname: "/"}
+	opts := cmpopts.IgnoreFields(tar.Header{}, "Mode", "Uname", "Gname", "ModTime", "Format")
+	if diff := cmp.Diff(hdr, want, opts); diff != "" {
+		t.Errorf("Next() returned unexpected diff (-want +got):\n%s", diff)
+	}
+
+	hdr, err = tr.Next()
+	if hdr != nil {
+		t.Errorf("No more tar entries were expected. Next() = %+v, want nil", hdr)
+	}
+	if err != io.EOF {
+		t.Fatal(err)
 	}
 }

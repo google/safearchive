@@ -114,22 +114,27 @@ type SecurityMode int
 
 const (
 	// PreventSymlinkTraversal security mode detects symlink
+	// This feature is enabled by default.
 	PreventSymlinkTraversal SecurityMode = 1
 	// SkipSpecialFiles security mode skips special files (e.g. block devices or fifos), links are allowed still
+	// This feature is not enabled by default.
 	SkipSpecialFiles SecurityMode = 2
 	// SanitizeFileMode will drop special file modes (e.g. setuid and tmp bit)
+	// This feature is not enabled by default.
 	SanitizeFileMode SecurityMode = 4
 	// SanitizeFilenames will sanitize filenames (dropping .. path components and turning entries into relative)
+	// This feature is enabled by default.
 	SanitizeFilenames SecurityMode = 8
+	// PreventCaseInsensitiveSymlinkTraversal activates case insensitive symlink traversal detection.
+	// This feature requires PreventSymlinkTraversal to be enabled as well.
+	// By default, this is activated only on MacOS and Windows builds. If you are extracting to a
+	// case insensitive filesystem on a Unix platform, you should activate this feature explicitly.
+	PreventCaseInsensitiveSymlinkTraversal SecurityMode = 16
 )
-
-// DefaultSecurityMode enables path traversal security measures. This mode should be safe for all
-// existing integrations.
-const DefaultSecurityMode = SanitizeFilenames | PreventSymlinkTraversal
 
 // MaximumSecurityMode enables all security features. Apps that care about file contents only
 // and nothing unix specific (e.g. file modes or special devices) should use this mode.
-const MaximumSecurityMode = DefaultSecurityMode | SanitizeFileMode | SkipSpecialFiles
+const MaximumSecurityMode = SanitizeFilenames | PreventSymlinkTraversal | SanitizeFileMode | SkipSpecialFiles | PreventCaseInsensitiveSymlinkTraversal
 
 func isSpecialFile(f zip.File) bool {
 	amode := f.Mode()
@@ -161,6 +166,9 @@ func applyMagic(files []*zip.File, securityMode SecurityMode) []*zip.File {
 		if securityMode&PreventSymlinkTraversal != 0 {
 			fName := sanitizer.SanitizePath(f.Name)
 			fName = strings.TrimSuffix(fName, "/")
+			if securityMode&PreventCaseInsensitiveSymlinkTraversal != 0 {
+				fName = strings.ToLower(fName)
+			}
 			n := strings.Split(fName, "/")
 			traversal := false
 			for i := 1; i <= len(n); i++ {
@@ -206,7 +214,6 @@ func OpenReader(name string) (*ReadCloser, error) {
 		return nil, err
 	}
 
-	//ReadCloser: o, originalFiles: o.File
 	r := Reader{Reader: &o.Reader, originalFiles: o.File}
 	rc := ReadCloser{Reader: r, upstreamReadCloser: o}
 	rc.SetSecurityMode(DefaultSecurityMode)
